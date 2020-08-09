@@ -36,8 +36,12 @@ class SegmentationMetric(object):
         # Intersection = TP Union = TP + FP + FN
         # IoU = TP / (TP + FP + FN)
         intersection = np.diag(self.confusionMatrix)  # 取对角元素的值，返回列表
-        union = np.sum(self.confusionMatrix, axis=1) + np.sum(self.confusionMatrix, axis=0) - np.diag(
-            self.confusionMatrix)  # axis = 1表示混淆矩阵行的值，返回列表； axis = 0表示取混淆矩阵列的值，返回列表
+        # axis = 1表示混淆矩阵行的值，返回列表； axis = 0表示取混淆矩阵列的值，返回列表
+        union = (
+            np.sum(self.confusionMatrix, axis=1) +
+            np.sum(self.confusionMatrix, axis=0) -
+            np.diag(self.confusionMatrix)
+        )
         IoU = intersection / union  # 返回列表，其值为各个类别的IoU
         mIoU = np.nanmean(IoU)  # 求各类别IoU的平均
         return mIoU
@@ -47,8 +51,13 @@ class SegmentationMetric(object):
         imgLabel[imgLabel != 0] = 1
         imgPredict[imgPredict != 0] = 1
         mask = (imgLabel >= 0) & (imgLabel < self.numClass)
+
+        # 混淆均镇的某一行 + 预测到的某一列
         label = self.numClass * imgLabel[mask] + imgPredict[mask]
 
+        # 判断每种label出现此处， 比如 0.1,2,3 ， 如果是二分类，则
+        #                                           0,1为label=0 的预测为[0, 1] 的数目
+        #                                           2,3为label=1的预测为[0, 1] 的数目
         count = np.bincount(label, minlength=self.numClass ** 2)
         confusionMatrix = count.reshape(self.numClass, self.numClass)
         return confusionMatrix
